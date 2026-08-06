@@ -1,0 +1,63 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console (http://localhost:9001)
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # One-shot init container: creates the lakehouse buckets, then exits.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/bronze &&
+      mc mb --ignore-existing local/silver &&
+      mc mb --ignore-existing local/gold
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+  spark:
+    image: apache/spark-py:v3.4.0
+    container_name: spark
+    user: root
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      PYTHONPATH: /opt/app:/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip
+      PATH: /opt/spark/bin:/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./src:/opt/app/src
+      - ./config:/opt/app/config
+      - ./data:/opt/app/data
+      - ./tests:/opt/app/tests
+      - ./config/log4j2.properties:/opt/spark/conf/log4j2.properties
+      - spark-ivy-cache:/root/.ivy2
+    working_dir: /opt/app
+    # Keeps the container alive so you can `docker compose exec spark bash`
+    # and run scripts interactively instead of it running once and exiting.
+    command: ["tail", "-f", "/dev/null"]
+
+volumes:
+  minio-data:
+  spark-ivy-cache:

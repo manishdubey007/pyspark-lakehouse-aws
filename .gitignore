@@ -1,0 +1,7 @@
+.env
+data/
+__pycache__/
+*.pyc
+spark-warehouse/
+.ivy2/
+.DS_Store
