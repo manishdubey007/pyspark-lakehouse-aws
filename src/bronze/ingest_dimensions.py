@@ -13,7 +13,7 @@ def ingest_dimensions(file_name: str, schema: StructType) -> None:
 
     logger.info("Reading %s", file_name)
     try:
-        dimensions_df = spark.read.schema(schema).option("multiline", "true").csv(
+        dimensions_df = spark.read.schema(schema).option("multiline", "true").option("enforceSchema", "false").csv(
             f"data/raw/{file_name}.csv", header=True
         )
         row_count = dimensions_df.count()
