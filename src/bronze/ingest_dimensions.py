@@ -8,11 +8,13 @@ from pyspark.sql.types import StructType
 logger = logging.getLogger(__name__)
 
 
-def ingest_dimensions(file_name: str, schema: StructType) -> None:
+def ingest_dimensions(file_name: str, schema: StructType, target_bucket: str) -> None:
     spark = get_spark_session()
 
     logger.info("Reading %s", file_name)
     try:
+        # Multiline values observed in some files which can split one record in to multiple rows. 
+        # This check has been enabled to handle multiline entries corrupting the actual record from all csv files.
         dimensions_df = spark.read.schema(schema).option("multiline", "true").option("enforceSchema", "false").csv(
             f"data/raw/{file_name}.csv", header=True
         )
@@ -25,20 +27,20 @@ def ingest_dimensions(file_name: str, schema: StructType) -> None:
 
     try:
         dimensions_df.write.mode("overwrite").csv(
-            f"s3a://bronze/{file_name}/",
+            f"s3a://{target_bucket}/{file_name}/",
             header=True
         )
     except Exception:
-        logger.exception("Failed to write %s to bronze", file_name)
+        logger.exception("Failed to write %s to %s", file_name, target_bucket)
         raise
 
-    logger.info("Wrote %s to bronze", file_name)
+    logger.info("Wrote %s to %s", file_name, target_bucket)
 
 
 def main():
     configure_logging()
     for file_name, schema in SCHEMAS.items():
-        ingest_dimensions(file_name, schema)
+        ingest_dimensions(file_name, schema, "bronze")
 
 
 if __name__ == "__main__":
