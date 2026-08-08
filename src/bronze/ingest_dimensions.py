@@ -21,6 +21,9 @@ def ingest_dimensions(file_name: str, schema: StructType, target_bucket: str) ->
         dimensions_df = dimensions_df.cache()
         row_count = dimensions_df.count()
         logger.info("Read %d rows for %s", row_count, file_name)
+        if row_count == 0:
+            logger.error("There are no rows in the file %s", file_name)
+            raise ValueError(f"There are no rows in the file {file_name}")
     except Exception:
         logger.exception("Failed to read %s", file_name)
         raise
