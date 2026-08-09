@@ -42,7 +42,6 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
-      PYTHONPATH: /opt/app:/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip
       PATH: /opt/spark/bin:/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -52,8 +51,12 @@ services:
       - ./data:/opt/app/data
       - ./tests:/opt/app/tests
       - ./config/log4j2.properties:/opt/spark/conf/log4j2.properties
+      - ./scripts/spark_entrypoint.sh:/opt/app/scripts/spark_entrypoint.sh
       - spark-ivy-cache:/root/.ivy2
     working_dir: /opt/app
+    # Resolves py4j's exact filename at startup instead of a hardcoded
+    # version in PYTHONPATH -- see scripts/spark_entrypoint.sh.
+    entrypoint: ["/opt/app/scripts/spark_entrypoint.sh"]
     # Keeps the container alive so you can `docker compose exec spark bash`
     # and run scripts interactively instead of it running once and exiting.
     command: ["tail", "-f", "/dev/null"]
