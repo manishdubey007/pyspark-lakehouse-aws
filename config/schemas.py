@@ -1,4 +1,4 @@
-from pyspark.sql.types import DoubleType, IntegerType, StringType, StructField, StructType
+from pyspark.sql.types import StringType, StructField, StructType
 
 customers_schema = StructType(
     [
@@ -21,21 +21,21 @@ products_schema = StructType(
         StructField("product_category_name", StringType(), True),
         StructField(
             "product_name_lenght",
-            IntegerType(),
+            StringType(),
             True,
             metadata={"comment": "Misspelling ('lenght') preserved from source column name"},
         ),
         StructField(
             "product_description_lenght",
-            IntegerType(),
+            StringType(),
             True,
             metadata={"comment": "Misspelling ('lenght') preserved from source column name"},
         ),
-        StructField("product_photos_qty", IntegerType(), True),
-        StructField("product_weight_g", IntegerType(), True),
-        StructField("product_length_cm", IntegerType(), True),
-        StructField("product_height_cm", IntegerType(), True),
-        StructField("product_width_cm", IntegerType(), True),
+        StructField("product_photos_qty", StringType(), True),
+        StructField("product_weight_g", StringType(), True),
+        StructField("product_length_cm", StringType(), True),
+        StructField("product_height_cm", StringType(), True),
+        StructField("product_width_cm", StringType(), True),
     ]
 )
 
@@ -61,8 +61,8 @@ geolocation_schema = StructType(
             True,
             metadata={"comment": "Kept as string to preserve leading zeros"},
         ),
-        StructField("geolocation_lat", DoubleType(), True),
-        StructField("geolocation_lng", DoubleType(), True),
+        StructField("geolocation_lat", StringType(), True),
+        StructField("geolocation_lng", StringType(), True),
         StructField("geolocation_city", StringType(), True),
         StructField("geolocation_state", StringType(), True),
     ]
@@ -78,22 +78,22 @@ category_translation_schema = StructType(
 order_items_schema = StructType(
     [
         StructField("order_id", StringType(), True),
-        StructField("order_item_id", IntegerType(), True),
+        StructField("order_item_id", StringType(), True),
         StructField("product_id", StringType(), True),
         StructField("seller_id", StringType(), True),
         StructField("shipping_limit_date", StringType(), True),
-        StructField("price", DoubleType(), True),
-        StructField("freight_value", DoubleType(), True),
+        StructField("price", StringType(), True),
+        StructField("freight_value", StringType(), True),
     ]
 )
 
 order_payments_schema = StructType(
     [
         StructField("order_id", StringType(), True),
-        StructField("payment_sequential", IntegerType(), True),
+        StructField("payment_sequential", StringType(), True),
         StructField("payment_type", StringType(), True),
-        StructField("payment_installments", IntegerType(), True),
-        StructField("payment_value", DoubleType(), True)
+        StructField("payment_installments", StringType(), True),
+        StructField("payment_value", StringType(), True)
     ]
 )
 
@@ -116,7 +116,7 @@ order_reviews_schema = StructType(
     [
         StructField("review_id", StringType(), True),
         StructField("order_id", StringType(), True),
-        StructField("review_score", IntegerType(), True),
+        StructField("review_score", StringType(), True),
         StructField("review_comment_title", StringType(), True),
         StructField("review_comment_message", StringType(), True),
         StructField("review_creation_date", StringType(), True),
