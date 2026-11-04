@@ -19,7 +19,7 @@ def read_raw_file(
     spark: SparkSession, source_path: str, file_name: str, schema: StructType
 ) -> DataFrame:
     try:
-        # some fields contain embedded newlines, so a quoted value can span several lines.
+        # Some fields contain embedded newlines, so a quoted value can span several lines.
         df = (
             spark.read.schema(schema)
             .option("multiline", "true")
