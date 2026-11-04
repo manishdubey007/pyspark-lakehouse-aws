@@ -1,4 +1,5 @@
-from config.schemas import customers_schema, order_reviews_schema
+from src.conf.schemas import customers_schema, order_reviews_schema
+from src.bronze.data_ingestion import loader
 
 CUSTOMERS_HEADER = "customer_id,customer_unique_id,customer_zip_code_prefix,customer_city,customer_state"
 

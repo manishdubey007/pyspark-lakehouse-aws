@@ -47,7 +47,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ./src:/opt/app/src
-      - ./config:/opt/app/config
       - ./data:/opt/app/data
       - ./tests:/opt/app/tests
       - ./config/log4j2.properties:/opt/spark/conf/log4j2.properties

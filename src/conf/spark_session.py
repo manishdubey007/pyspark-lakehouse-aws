@@ -1,10 +1,10 @@
 import os
-
 from pyspark.sql import SparkSession
 
-def get_spark_session(app_name: str = "olist-ingestion") -> SparkSession:
+def get_spark_session(app_name: str) -> SparkSession:
     return (
         SparkSession.builder.appName(app_name)
+        .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:3.3.4")
         .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000")
         .config("spark.hadoop.fs.s3a.access.key", os.environ["MINIO_ROOT_USER"])
         .config("spark.hadoop.fs.s3a.secret.key", os.environ["MINIO_ROOT_PASSWORD"])
