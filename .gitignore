@@ -8,3 +8,4 @@ spark-warehouse/
 .venv/
 .pytest_cache/
 .vscode/
+.vscode/settings.json
