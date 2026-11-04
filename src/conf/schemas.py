@@ -93,7 +93,7 @@ order_payments_schema = StructType(
         StructField("payment_sequential", StringType(), True),
         StructField("payment_type", StringType(), True),
         StructField("payment_installments", StringType(), True),
-        StructField("payment_value", StringType(), True)
+        StructField("payment_value", StringType(), True),
     ]
 )
 

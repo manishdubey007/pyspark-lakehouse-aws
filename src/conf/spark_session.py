@@ -1,5 +1,7 @@
 import os
+
 from pyspark.sql import SparkSession
+
 
 def get_spark_session(app_name: str) -> SparkSession:
     return (
@@ -10,8 +12,6 @@ def get_spark_session(app_name: str) -> SparkSession:
         .config("spark.hadoop.fs.s3a.secret.key", os.environ["MINIO_ROOT_PASSWORD"])
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
         .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
-        .config(
-            "spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem"
-        )
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
         .getOrCreate()
     )

@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 100
+# Lowest Python the code runs on: the Spark container (apache/spark-py:v3.4.0) ships 3.10.
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/W: pycodestyle errors and warnings, F: pyflakes (unused imports, undefined names), I: import sorting
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
