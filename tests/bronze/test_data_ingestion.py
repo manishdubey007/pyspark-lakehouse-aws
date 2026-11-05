@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from py4j.protocol import Py4JJavaError
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType
 
@@ -9,6 +10,10 @@ from src.conf.schemas import SCHEMAS, customers_schema, order_reviews_schema
 
 CUSTOMERS_HEADER = (
     "customer_id,customer_unique_id,customer_zip_code_prefix,customer_city,customer_state"
+)
+
+CUSTOMERS_HEADER_REORDERED = (
+    "customer_id,customer_zip_code_prefix,customer_unique_id,customer_city,customer_state"
 )
 
 REVIEW_HEADER = (
@@ -54,17 +59,6 @@ def test_review_with_embedded_newline_parses_as_single_record(spark: SparkSessio
     assert row["review_answer_timestamp"] == "2018-02-20 10:52:22"
 
 
-def test_review_with_embedded_newline_corrupts_without_multiline_option(
-    spark: SparkSession, tmp_path: Path
-):
-    csv_path = tmp_path / "order_reviews.csv"
-    csv_path.write_text(f"{REVIEW_HEADER}\n{REVIEW_ROW_WITH_EMBEDDED_NEWLINE}\n")
-
-    df = spark.read.schema(order_reviews_schema).csv(str(csv_path), header=True)
-
-    assert df.count() != 1
-
-
 @pytest.mark.parametrize("file_name, schema", SCHEMAS.items())
 def test_empty_file_raises_value_error(
     spark: SparkSession, tmp_path: Path, file_name: str, schema: StructType
@@ -74,3 +68,17 @@ def test_empty_file_raises_value_error(
 
     with pytest.raises(ValueError):
         read_raw_file(spark=spark, source_path=str(tmp_path), file_name=file_name, schema=schema)
+
+
+def test_reordered_header_raises_error(spark: SparkSession, tmp_path: Path):
+    file_name = "customers"
+    csv_path = tmp_path / f"{file_name}.csv"
+    csv_path.write_text(f"{CUSTOMERS_HEADER_REORDERED}\nabc123,01310,unique123,sao paulo,SP\n")
+
+    with pytest.raises(Py4JJavaError, match="CSV header does not conform to the schema"):
+        read_raw_file(
+            spark=spark,
+            source_path=str(tmp_path),
+            file_name=file_name,
+            schema=customers_schema,
+        )
