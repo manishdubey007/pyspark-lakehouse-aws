@@ -57,7 +57,7 @@ docker compose exec spark python3 -m src.app     # run the pipeline
 ```
 
 - MinIO console: http://localhost:9001 (log in with the `.env` credentials)
-- Output lands in the `bronze` bucket
+- Output lands in the `bronze` bucket as Parquet, one folder per source file
 
 Stop the stack:
 
@@ -70,7 +70,7 @@ docker compose down -v          # also deletes MinIO data and the Ivy jar cache
 
 ```bash
 source .venv/bin/activate
-python -m pytest
+pytest                          # or `python -m pytest`; pyproject.toml puts the root on the path
 ```
 
 ## Troubleshooting

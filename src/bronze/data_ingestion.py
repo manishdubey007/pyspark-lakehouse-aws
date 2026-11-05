@@ -41,10 +41,11 @@ def read_raw_file(
 
 
 def write_raw_file(df: DataFrame, target_path: str, file_name: str) -> None:
+    target_path = f"{target_path}/{file_name}/"
     try:
-        df.write.mode("overwrite").csv(f"{target_path}/{file_name}/", header=True)
+        df.write.mode("overwrite").parquet(f"{target_path}/")
     except Exception:
         logger.exception("Failed to write %s to %s", file_name, target_path)
         raise
-
-    logger.info("Wrote %s to %s", file_name, target_path)
+    output_counts = df.count()
+    logger.info("Wrote %d rows to %s", output_counts, f"{target_path}")

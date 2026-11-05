@@ -16,10 +16,11 @@ Part of a larger [Data Engineering portfolio](#) — Project 1 of 13 (+ bonus).
 ## Architecture
 
 ```
-Olist CSVs (Kaggle)
+Olist CSVs (Kaggle) ── kept untouched in data/raw/
       │
       ▼
-Raw / bronze landing (MinIO, local S3-compatible)  ──▶  real AWS S3 (final stage)
+Bronze landing: Parquet, all columns StringType, no transformation
+  (MinIO, local S3-compatible  ──▶  real AWS S3 in the final stage)
       │
       ▼
 PySpark transformations
@@ -50,31 +51,34 @@ Glue Data Catalog + Athena (query layer)
 
 ## Setup
 
-> To be filled in as the pipeline is built.
+Full setup (MinIO credentials, dataset download, local venv, Java 17), run commands and troubleshooting are in [`run.md`](run.md). Quick start once set up:
 
 ```bash
-# clone
-git clone https://github.com/<you>/pyspark-lakehouse-aws.git
-cd pyspark-lakehouse-aws
-
-# start local stack (MinIO + Spark)
-docker compose up -d
-
-# run the pipeline
-# (commands TBD once stage 1 is built)
+docker compose up -d                             # start MinIO + Spark
+docker compose exec spark python3 -m src.app     # land raw CSVs in the bronze bucket
+pytest                                           # tests run locally, no MinIO needed
 ```
+
+## ELT, not ETL
+
+Raw data lands first and is transformed only after landing:
+
+- **Raw**: the original Olist CSVs stay untouched in `data/raw/`, reproducible with `scripts/download_data.sh`.
+- **Bronze**: the same data, untransformed. Every column is landed as `StringType` (no casting, cleaning or dedup), so nothing is lost or reinterpreted at ingestion. Ingestion only fails fast on unreadable input: a header that doesn't match the declared schema, or a file with zero rows.
+- **Silver / gold**: casting, cleaning, dedup, joins and SCD2 all happen here, reading from bronze.
 
 ## Key design decisions
 
+- **Bronze is Parquet, not CSV**: format conversion isn't a content transformation, so ELT still holds. Parquet stores its own schema and has no record delimiters, so CSV parsing quirks (quoted fields with embedded newlines that need `multiline`, header handling) are dealt with once at the ingestion boundary instead of by every downstream reader. A Spark-written CSV wouldn't have been a byte-for-byte copy of the source anyway; the originals stay in `data/raw/`.
 - **MinIO from day one**: development targets `s3a://` from the start (backed by MinIO locally) rather than plain local filesystem, so the same code path carries over to real S3 unchanged — only the endpoint/credentials config changes.
 - **Delta Lake built first**: lowest setup overhead of the three formats: get one format working end-to-end and documented before adding Parquet and Iceberg.
 - **Iceberg catalog**: Hadoop catalog (file-based metadata) for local dev — no external catalog service needed, and migrates cleanly to Glue Data Catalog once pointed at real S3.
 
 ## Project status
 
-Not yet started. Build stages tracked in Jira under epic `SCRUM-1`:
+Stage 1 done; stage 2 in progress. Build stages tracked in Jira under epic `SCRUM-1`:
 
-- [ ] Docker Compose setup (MinIO + PySpark) + raw ingestion
+- [x] Docker Compose setup (MinIO + PySpark) + raw ingestion
 - [ ] Cleaning + dedup transformation
 - [ ] Enrichment joins + window functions
 - [ ] SCD Type 2 on customer dimension
@@ -84,3 +88,5 @@ Not yet started. Build stages tracked in Jira under epic `SCRUM-1`:
 ## Design write-up
 
 Fuller architecture notes and decisions live in Confluence: *Project 1 — PySpark Lakehouse (AWS)*.
+
+[`docs/`](docs/) holds my learning notes from building this (Spark caching, logging, testing, error handling), not project documentation.

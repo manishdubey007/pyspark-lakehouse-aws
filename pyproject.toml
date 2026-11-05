@@ -9,3 +9,8 @@ select = ["E", "W", "F", "I"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
+
+[tool.pytest.ini_options]
+# Lets plain `pytest` and the VS Code test runner import `src` from the project root.
+pythonpath = ["."]
+testpaths = ["tests"]
