@@ -66,6 +66,38 @@ docker compose down             # keeps MinIO data
 docker compose down -v          # also deletes MinIO data and the Ivy jar cache
 ```
 
+## Exploration notebooks
+
+Notebooks live in `notebooks/` and run inside the `spark` container (only the Docker
+network can reach MinIO). JupyterLab starts automatically with `docker compose up -d`.
+After changing the `Dockerfile`, rebuild once with `docker compose up -d --build`.
+
+Open **<http://127.0.0.1:8888/lab?token=lakehouse>** (token is `JUPYTER_TOKEN` from
+`.env`, default `lakehouse`). Server logs: `docker compose logs -f spark`. In a notebook:
+
+```python
+from src.conf.spark_session import get_spark_session
+
+spark = get_spark_session(app_name="explore")
+orders = spark.read.parquet("s3a://bronze/olist_orders_dataset/")
+```
+
+**From VS Code instead of the browser** (Python + Jupyter extensions installed):
+
+1. `docker compose up -d` (Jupyter is then already running in the container).
+2. Open the notebook from the local `notebooks/` folder in VS Code.
+3. *Select Kernel* (top right) → *Select Another Kernel…* → *Existing Jupyter Server* →
+   paste `http://127.0.0.1:8888/lab?token=lakehouse` → pick `Python 3 (ipykernel)`.
+   Do **not** pick a local Python (e.g. `Python 3.12.12`) — that runs on the Mac, asks
+   to install `ipykernel`, and can't reach MinIO anyway.
+4. For autocomplete: *Python: Select Interpreter* → the project's `.venv`. Code runs in the container; Pylance reads PySpark from the venv for suggestions (`Ctrl+Space`).
+
+- Spark UI for the notebook's session: <http://localhost:4040>
+- Notebooks explore and call `src/` functions; transformation logic lives in `src/` with tests.
+- Clear outputs before committing a notebook.
+- Stopping the container (`docker compose down`) stops Jupyter; restart the kernel
+  from the notebook toolbar if a Spark session gets stuck.
+
 ## Run the tests
 
 ```bash
@@ -82,4 +114,6 @@ pytest                          # or `python -m pytest`; pyproject.toml puts the
 | `KeyError: 'MINIO_ROOT_USER'` | Pipeline run on the Mac instead of in Docker | Use `docker compose exec spark python3 -m src.app` |
 | `NoSuchMethodException: java.nio.DirectByteBuffer.<init>(long,int)` | Java 21 | Set `JAVA_HOME` to Java 17 (see setup step 4) |
 | `ClassNotFoundException: org.apache.hadoop.fs.s3a.S3AFileSystem` | `hadoop-aws` jar not loaded | Check `spark.jars.packages` in `src/conf/spark_session.py`; keep `hadoop-aws` at 3.3.4 to match Spark's Hadoop |
+| VS Code: `Running cells with 'Python 3.12…' requires the ipykernel package` | Notebook kernel is a local Mac Python, not the container | *Select Kernel* → *Existing Jupyter Server* → `http://127.0.0.1:8888/lab?token=lakehouse` |
+| `http://127.0.0.1:8888` doesn't load | `spark` container not running, or old image without Jupyter | `docker compose up -d --build`, then `docker compose logs spark` |
 | Traceback shows an old file path with `???` | Stale `__pycache__` from before a folder move | `find . -name "__pycache__" -not -path "./.venv/*" -exec rm -rf {} +` |

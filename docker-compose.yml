@@ -35,9 +35,13 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
 
   spark:
-    image: apache/spark-py:v3.4.0
+    build: .
+    image: pyspark-lakehouse-spark:3.4.0
     container_name: spark
     user: root
+    ports:
+      - "127.0.0.1:8888:8888"   # JupyterLab (see run.md)
+      - "127.0.0.1:4040:4040"   # Spark UI of the running session
     depends_on:
       minio-init:
         condition: service_completed_successfully
@@ -45,10 +49,14 @@ services:
       PATH: /opt/spark/bin:/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      # Fixed token so the notebook URL is stable across restarts. Port is bound
+      # to 127.0.0.1 only; override in .env if you like.
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:-lakehouse}
     volumes:
       - ./src:/opt/app/src
       - ./data:/opt/app/data
       - ./tests:/opt/app/tests
+      - ./notebooks:/opt/app/notebooks
       - ./config/log4j2.properties:/opt/spark/conf/log4j2.properties
       - ./scripts/spark_entrypoint.sh:/opt/app/scripts/spark_entrypoint.sh
       - spark-ivy-cache:/root/.ivy2
@@ -56,9 +64,10 @@ services:
     # Resolves py4j's exact filename at startup instead of a hardcoded
     # version in PYTHONPATH -- see scripts/spark_entrypoint.sh.
     entrypoint: ["/opt/app/scripts/spark_entrypoint.sh"]
-    # Keeps the container alive so you can `docker compose exec spark bash`
-    # and run scripts interactively instead of it running once and exiting.
-    command: ["tail", "-f", "/dev/null"]
+    # JupyterLab is the long-running process: it keeps the container alive for
+    # `docker compose exec spark ...` and serves the exploration notebooks.
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--allow-root", "--no-browser",
+              "--notebook-dir=/opt/app/notebooks"]
 
 volumes:
   minio-data:
